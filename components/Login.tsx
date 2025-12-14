@@ -14,26 +14,42 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onCancel }) => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
+
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         setError(null);
 
         try {
-            const { error } = await supabase.auth.signInWithPassword({
+            // Check Env Vars
+            const url = import.meta.env.VITE_SUPABASE_URL;
+            const key = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+            // Create a timeout promise to prevent infinite hangs
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('TIMEOUT_CONNECTION: La conexión a Supabase tardó demasiado')), 10000);
+            });
+
+            // Race the login against the timeout
+            const loginPromise = supabase.auth.signInWithPassword({
                 email,
                 password,
             });
+
+            const result: any = await Promise.race([loginPromise, timeoutPromise]);
+            const { error, data } = result;
 
             if (error) throw error;
 
             onLoginSuccess();
         } catch (err: any) {
+            console.error(err);
             setError(err.message || 'Error al iniciar sesión');
         } finally {
             setLoading(false);
         }
     };
+
 
     return (
         <div className="min-h-[70vh] flex items-center justify-center px-4 animate-fade-in">
@@ -106,7 +122,10 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onCancel }) => {
                         Volver al inicio
                     </button>
                 </form>
+
+
             </div>
         </div>
     );
+
 };

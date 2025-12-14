@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 import { Property } from '../types';
 
-const apiKey = process.env.API_KEY || '';
+const apiKey = import.meta.env.VITE_GEMINI_API_KEY || '';
 const ai = new GoogleGenAI({ apiKey });
 
 // Helper to format properties into a string context for the AI
@@ -17,11 +17,11 @@ const formatPropertiesContext = (properties: Property[]): string => {
 };
 
 export const chatWithGemini = async (
-  userMessage: string, 
+  userMessage: string,
   properties: Property[],
   history: { role: string; parts: { text: string }[] }[]
 ): Promise<string> => {
-  
+
   if (!apiKey) {
     return "Error: API Key is missing. Please configure the environment.";
   }
@@ -43,10 +43,10 @@ export const chatWithGemini = async (
 
   try {
     const model = 'gemini-2.5-flash';
-    
+
     // We use generateContent for a stateless approach or managing history manually to ensure system instruction context is always fresh with latest properties if needed.
     // However, to keep chat history, we construct the prompt with history.
-    
+
     const contents = [
       {
         role: 'user',

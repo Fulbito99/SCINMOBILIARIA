@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { supabase } from './services/supabase';
-import { Home, Search, Menu, X, ArrowRight, Phone, Mail, MapPin, User } from 'lucide-react';
+import { Home, Search, Menu, X, ArrowRight, Phone, Mail, MapPin, User, MessageCircle, Sun, Moon } from 'lucide-react';
 import { Property } from './types';
 import { PROPERTY_TYPES_MAP } from './utils/translations';
+import { CONTACT_INFO } from './constants';
 import { PropertyCard } from './components/PropertyCard';
 import { ChatWidget } from './components/ChatWidget';
 import { Login } from './components/Login';
@@ -13,32 +14,86 @@ type ViewState = 'home' | 'properties' | 'contact' | 'login' | 'dashboard';
 
 function InnerApp() {
   const { t, language, setLanguage } = useLanguage();
-  const [currentView, setCurrentView] = useState<ViewState>('home');
+
+  // Custom Hook for Hash Routing
+  const getHashView = (): ViewState => {
+    const hash = window.location.hash.replace('#', '');
+    if (['home', 'properties', 'contact', 'login', 'dashboard'].includes(hash)) {
+      return hash as ViewState;
+    }
+    return 'home';
+  };
+
+  const [currentView, setCurrentView] = useState<ViewState>(getHashView());
   const [properties, setProperties] = useState<Property[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<string>('Todos');
   const [detailView, setDetailView] = useState<Property | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
+  const [simpleLightboxOpen, setSimpleLightboxOpen] = useState(false);
+  const [simpleLightboxIndex, setSimpleLightboxIndex] = useState(0);
+
+  // Theme State
+  const [darkMode, setDarkMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('theme') === 'dark' ||
+        (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    }
+    return false;
+  });
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+    }
+  }, [darkMode]);
+
+  // Toggle Component
+  const ThemeToggle = () => (
+    <button
+      onClick={() => setDarkMode(!darkMode)}
+      className={`relative w-14 h-7 rounded-full transition-colors duration-300 focus:outline-none ${darkMode ? 'bg-indigo-600' : 'bg-slate-300'}`}
+    >
+      <div className={`absolute top-1 left-1 w-5 h-5 rounded-full transform transition-transform duration-300 flex items-center justify-center bg-white shadow-sm ${darkMode ? 'translate-x-7' : 'translate-x-0'}`}>
+        {darkMode ? <Moon size={12} className="text-indigo-600" /> : <Sun size={12} className="text-orange-500" />}
+      </div>
+    </button>
+  );
+
+  const openSimpleLightbox = (index: number) => {
+    setSimpleLightboxIndex(index);
+    setSimpleLightboxOpen(true);
+  };
+
+  // Sync state with URL hash
+  useEffect(() => {
+    const handleHashChange = () => {
+      setCurrentView(getHashView());
+      setDetailView(null); // Clear detail view on navigation
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
+  const navigateTo = (view: ViewState) => {
+    window.location.hash = view; // This triggers the useEffect above
+    setMobileMenuOpen(false);
+  };
 
   useEffect(() => {
     // Check active session
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        setCurrentView('dashboard');
-        // Fetch profile
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', session.user.id)
-          .single();
-        if (profile) {
-          setUserName(profile.full_name);
-        } else {
-          console.log("Profile not found for user. Please run repair_database.sql");
-          // Fallback name from email
-          setUserName(session.user.email?.split('@')[0] || 'Agente');
-        }
+        // Use email or metadata as fallback, ignoring 'profiles' table to prevent hangs
+        const name = session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Agente';
+        setUserName(name);
       }
     });
 
@@ -46,29 +101,20 @@ function InnerApp() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session) {
-        setCurrentView('dashboard');
         setMobileMenuOpen(false);
-        // Fetch profile
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('full_name')
-          .eq('id', session.user.id)
-          .single();
-        if (profile) {
-          setUserName(profile.full_name);
-        } else {
-          // Fallback
-          setUserName(session.user.email?.split('@')[0] || 'Agente');
-        }
+        const name = session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'Agente';
+        setUserName(name);
       } else {
         // If logged out, go home and clear name
-        setCurrentView('home');
+        if (currentView === 'dashboard') {
+          navigateTo('home');
+        }
         setUserName(null);
       }
     });
 
     return () => subscription.unsubscribe();
-  }, []);
+  }, [currentView]); // Added currentView ref dependency if needed, or just []
 
   useEffect(() => {
     const fetchProperties = async () => {
@@ -77,71 +123,33 @@ function InnerApp() {
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) {
-        console.error("Error fetching properties:", error);
-      }
-
       if (data && !error) {
-        console.log("Supabase Raw Data:", data); // DEBUG: Ver qué llega de Supabase
         // Map Supabase snake_case to frontend camelCase
         const mappedProps: Property[] = data.map((p: any) => ({
           ...p,
           imageUrl: p.image_url,
+          images: p.images, // Array of images
+          listing_type: p.listing_type || 'sale',
         }));
-        console.log("Mapped Properties:", mappedProps); // DEBUG: Ver qué se guarda en el estado
         setProperties(mappedProps);
-      } else {
-        console.log("Supabase No Data or Error. Data:", data, "Error:", error);
       }
     };
-
     fetchProperties();
-  }, [currentView]);
-
-  // Debugging Connection
-  const [connectionError, setConnectionError] = useState<string | null>(null);
-  useEffect(() => {
-    supabase.from('properties').select('count', { count: 'exact', head: true })
-      .then(({ error }) => {
-        if (error) {
-          console.error("Supabase Connection Check Failed:", error);
-          setConnectionError(error.message);
-        } else {
-          console.log("Supabase Connection Check Passed");
-          setConnectionError(null);
-        }
-      });
-  }, []);
+  }, []); // Only fetch once on mount
 
   const filteredProperties = useMemo(() => {
-    console.log("Filtering properties...", properties.length); // DEBUG
-    const filtered = properties.filter(p => {
+    return properties.filter(p => {
       const matchesSearch = p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
         p.location.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesType = selectedType === 'Todos' || p.type === selectedType;
-
-      // Log failed matches for debugging
-      if (!matchesSearch || !matchesType) {
-        console.log(`Filtered out ${p.title}: Search=${matchesSearch}, Type=${matchesType}, MyType=${p.type}, Selected=${selectedType}`);
-      }
-
       return matchesSearch && matchesType;
     });
-    console.log("Filtered result count:", filtered.length); // DEBUG
-    return filtered;
   }, [searchTerm, selectedType, properties]);
 
   const uniqueTypes = ['Todos', ...Array.from(new Set(properties.map(p => p.type)))];
 
   const handlePropertyClick = (property: Property) => {
     setDetailView(property);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const navigateTo = (view: ViewState) => {
-    setCurrentView(view);
-    setDetailView(null);
-    setMobileMenuOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -376,6 +384,7 @@ function InnerApp() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
           <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+            <h3 className="text-lg font-bold text-indigo-600 mb-1 uppercase tracking-wide">¿Quiere tasar su propiedad?</h3>
             <h2 className="text-2xl font-bold text-slate-900 mb-6">{t('contact.form_title')}</h2>
             <ContactForm />
           </div>
@@ -449,23 +458,45 @@ function InnerApp() {
     if (!detailView) return null;
     return (
       <div className="animate-fade-in">
-        <div className="relative h-[50vh] min-h-[400px]">
-          <img src={detailView.imageUrl} alt={detailView.title} className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-black/40"></div>
-          <div className="absolute bottom-0 left-0 right-0 p-8 text-white max-w-7xl mx-auto">
+        <div className="relative">
+          <div className="h-[50vh] min-h-[400px] overflow-hidden">
+            {/* Main Cover Image */}
+            <img
+              src={detailView.images && detailView.images.length > 0 ? detailView.images[0] : detailView.imageUrl}
+              alt={detailView.title}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-black/30"></div>
+          </div>
+
+          <div className="absolute bottom-0 left-0 right-0 p-8 text-white max-w-7xl mx-auto z-10">
             <button
               onClick={() => setDetailView(null)}
-              className="mb-4 text-white/80 hover:text-white flex items-center text-sm font-medium"
+              className="mb-4 text-white/90 hover:text-white flex items-center text-sm font-medium bg-black/20 px-3 py-1 rounded-full backdrop-blur-sm w-fit"
             >
               ← {t('detail.back')}
             </button>
-            <h1 className="text-4xl md:text-5xl font-bold mb-2">{detailView.title}</h1>
+            <h1 className="text-4xl md:text-5xl font-bold mb-2 text-shadow">{detailView.title}</h1>
             <div className="flex items-center gap-4 text-lg">
-              <span className="bg-indigo-600 px-3 py-1 rounded text-sm font-bold">{t(`type.${detailView.type}`) || detailView.type}</span>
-              <span>{detailView.location}</span>
+              <span className="bg-indigo-600 px-3 py-1 rounded text-sm font-bold shadow-sm">{t(`type.${detailView.type}`) || detailView.type}</span>
+              <span className="flex items-center gap-1 text-white/90"><MapPin size={18} /> {detailView.location}</span>
             </div>
           </div>
         </div>
+
+        {/* Image Gallery */}
+        {(detailView.images && detailView.images.length > 1) && (
+          <div className="max-w-7xl mx-auto px-4 pt-8">
+            <h3 className="text-xl font-bold text-slate-900 mb-4">Galería de Fotos</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {detailView.images.slice(1).map((img, idx) => (
+                <div key={idx} className="h-48 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition shadow-sm">
+                  <img src={img} alt={`Gallery ${idx}`} className="w-full h-full object-cover" />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="max-w-7xl mx-auto px-4 py-12 grid grid-cols-1 lg:grid-cols-3 gap-12">
           <div className="lg:col-span-2 space-y-8">
@@ -504,14 +535,22 @@ function InnerApp() {
           <div className="lg:col-span-1">
             <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100 sticky top-24">
               <p className="text-slate-500 text-sm mb-1">{t('detail.price_label')}</p>
-              <p className="text-4xl font-bold text-slate-900 mb-6">${detailView.price.toLocaleString()}</p>
+              <p className="text-4xl font-bold text-slate-900 mb-6">
+                {detailView.currency === 'EUR' && '€'}
+                {detailView.currency === 'USD' && 'U$S'}
+                {(detailView.currency === 'ARS' || !['EUR', 'USD'].includes(detailView.currency)) && '$'}
+                {' '}{detailView.price.toLocaleString()}
+              </p>
 
-              <button className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold hover:bg-slate-800 transition mb-3">
-                {t('detail.request_visit')}
-              </button>
-              <button className="w-full bg-white text-slate-900 border-2 border-slate-900 py-4 rounded-xl font-bold hover:bg-slate-50 transition">
+              <a
+                href={`https://wa.me/5493884362820?text=${encodeURIComponent(`Hola, me interesa la propiedad "${detailView.title}"`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full bg-green-600 text-white py-4 rounded-xl font-bold hover:bg-green-700 transition mb-3 flex items-center justify-center gap-2"
+              >
+                <MessageCircle size={20} />
                 {t('detail.contact_agent')}
-              </button>
+              </a>
 
               <div className="mt-6 pt-6 border-t border-gray-100 text-center text-sm text-slate-500">
                 <p>{t('detail.chat_help')}</p>
@@ -524,39 +563,38 @@ function InnerApp() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col">
-      <nav className="sticky top-0 z-40 bg-white/90 backdrop-blur-md border-b border-gray-100 shadow-sm">
-        {connectionError && (
-          <div className="bg-red-500 text-white text-center py-2 px-4 text-xs font-bold">
-            ERROR DE CONEXIÓN CON SUPABASE: {connectionError} (Revisa .env.local)
-          </div>
-        )}
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-900 flex flex-col transition-colors duration-300">
+      <nav className="sticky top-0 z-40 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border-b border-gray-100 dark:border-slate-800 shadow-sm transition-colors duration-300">
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="relative flex justify-between items-center h-20">
-            <div className="flex items-center cursor-pointer" onClick={() => navigateTo('home')}>
-              <div className="bg-indigo-600 p-2 rounded-lg text-white mr-2">
-                <Home size={24} />
+            <div className="flex items-center gap-4">
+              <ThemeToggle />
+              <div className="flex items-center cursor-pointer" onClick={() => navigateTo('home')}>
+                <div className="bg-indigo-600 p-2 rounded-lg text-white mr-2">
+                  <Home size={24} />
+                </div>
+                <span className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">INMOBILIARIA <span className="text-indigo-600 dark:text-indigo-400">CONESA</span></span>
               </div>
-              <span className="text-xl font-bold text-slate-900 tracking-tight">INMOBILIARIA <span className="text-indigo-600">CONESA</span></span>
             </div>
 
-            <div className="hidden md:flex absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 space-x-8 text-sm font-medium text-slate-600">
-              <button onClick={() => navigateTo('home')} className={`hover:text-indigo-600 transition ${currentView === 'home' ? 'text-indigo-600' : ''}`}>{t('nav.home')}</button>
-              <button onClick={() => navigateTo('properties')} className={`hover:text-indigo-600 transition ${currentView === 'properties' ? 'text-indigo-600' : ''}`}>{t('nav.properties')}</button>
-              <button onClick={() => navigateTo('contact')} className={`hover:text-indigo-600 transition ${currentView === 'contact' ? 'text-indigo-600' : ''}`}>{t('nav.contact')}</button>
+            <div className="hidden md:flex absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 space-x-8 text-sm font-medium text-slate-600 dark:text-slate-300">
+              <button onClick={() => navigateTo('home')} className={`hover:text-indigo-600 dark:hover:text-indigo-400 transition ${currentView === 'home' ? 'text-indigo-600 dark:text-indigo-400' : ''}`}>{t('nav.home')}</button>
+              <button onClick={() => navigateTo('properties')} className={`hover:text-indigo-600 dark:hover:text-indigo-400 transition ${currentView === 'properties' ? 'text-indigo-600 dark:text-indigo-400' : ''}`}>{t('nav.properties')}</button>
+              <button onClick={() => navigateTo('contact')} className={`hover:text-indigo-600 dark:hover:text-indigo-400 transition ${currentView === 'contact' ? 'text-indigo-600 dark:text-indigo-400' : ''}`}>{t('nav.contact')}</button>
             </div>
 
             <div className="hidden md:flex items-center gap-4">
-              <div className="flex bg-gray-100 rounded-lg p-1">
+              <div className="flex bg-gray-100 dark:bg-slate-800 rounded-lg p-1">
                 <button
                   onClick={() => setLanguage('es')}
-                  className={`px-2 py-1 rounded text-xs font-bold transition ${language === 'es' ? 'bg-white shadow text-indigo-600' : 'text-slate-500'}`}
+                  className={`px-2 py-1 rounded text-xs font-bold transition ${language === 'es' ? 'bg-white dark:bg-slate-700 shadow text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}
                 >
                   ES
                 </button>
                 <button
                   onClick={() => setLanguage('en')}
-                  className={`px-2 py-1 rounded text-xs font-bold transition ${language === 'en' ? 'bg-white shadow text-indigo-600' : 'text-slate-500'}`}
+                  className={`px-2 py-1 rounded text-xs font-bold transition ${language === 'en' ? 'bg-white dark:bg-slate-700 shadow text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}
                 >
                   EN
                 </button>
@@ -564,18 +602,21 @@ function InnerApp() {
 
               <button
                 onClick={() => navigateTo(userName ? 'dashboard' : 'login')}
-                className="text-sm font-medium text-slate-500 hover:text-indigo-600 transition flex items-center gap-1"
+                className="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition flex items-center gap-1"
               >
-                <User size={16} />
+                <div className="p-2 bg-gray-100 dark:bg-slate-800 rounded-full hover:bg-gray-200 dark:hover:bg-slate-700 transition">
+                  <User size={18} />
+                </div>
                 {userName || t('nav.agent_login')}
               </button>
             </div>
 
             <div className="md:hidden flex items-center gap-4">
-              <button onClick={() => setLanguage(language === 'es' ? 'en' : 'es')} className="font-bold text-slate-600 border px-2 py-1 rounded text-xs">
+              <ThemeToggle />
+              <button onClick={() => setLanguage(language === 'es' ? 'en' : 'es')} className="font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded text-xs">
                 {language.toUpperCase()}
               </button>
-              <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-slate-600 hover:text-slate-900">
+              <button onClick={() => setMobileMenuOpen(!mobileMenuOpen)} className="text-slate-600 dark:text-white hover:text-slate-900 dark:hover:text-slate-200">
                 {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
               </button>
             </div>

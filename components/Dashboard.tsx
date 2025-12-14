@@ -134,7 +134,12 @@ export const Dashboard: React.FC<DashboardProps> = ({ onLogout }) => {
                                     <h3 className="font-bold text-slate-900 truncate">{prop.title}</h3>
                                     <p className="text-slate-500 text-sm mb-3 truncate">{prop.location}</p>
                                     <div className="flex justify-between items-center">
-                                        <span className="font-bold text-indigo-600">${Number(prop.price).toLocaleString()}</span>
+                                        <span className="font-bold text-indigo-600">
+                                            {prop.currency === 'EUR' && '€'}
+                                            {prop.currency === 'USD' && 'U$S'}
+                                            {(prop.currency === 'ARS' || !['EUR', 'USD'].includes(prop.currency)) && '$'}
+                                            {' '}{Number(prop.price).toLocaleString()}
+                                        </span>
                                         <div className="text-xs text-slate-400">
                                             {prop.beds} hab • {prop.sqft} m²
                                         </div>

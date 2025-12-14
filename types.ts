@@ -8,8 +8,10 @@ export interface Property {
   baths: number;
   sqft: number;
   type: 'House' | 'Apartment' | 'Condo' | 'Villa';
+  listing_type?: 'sale' | 'rent';
   imageUrl: string;
   image_url?: string; // Optional for raw DB data
+  images?: string[]; // Array of image URLs
   description: string;
   features: string[];
 }

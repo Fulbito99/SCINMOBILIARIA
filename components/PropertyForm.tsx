@@ -21,8 +21,10 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({ onClose, onSuccess, 
         baths: initialData?.baths?.toString() || '',
         sqft: initialData?.sqft?.toString() || '',
         type: initialData?.type || 'House',
+        listing_type: initialData?.listing_type || 'sale',
         description: initialData?.description || '',
-        image_url: initialData?.image_url || 'https://picsum.photos/800/600?random=' + Math.floor(Math.random() * 100),
+        // Initialize images from array if available, else single url, else random
+        image_url: initialData?.images?.join('\n') || initialData?.image_url || 'https://picsum.photos/800/600?random=' + Math.floor(Math.random() * 100),
         features: initialData?.features?.join(', ') || ''
     });
 
@@ -40,6 +42,8 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({ onClose, onSuccess, 
 
             if (!user) throw new Error('Usuario no autenticado');
 
+            const imagesArray = formData.image_url.split('\n').map(url => url.trim()).filter(url => url !== '');
+
             const propertyData = {
                 user_id: user.id,
                 title: formData.title,
@@ -49,9 +53,12 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({ onClose, onSuccess, 
                 beds: Number(formData.beds),
                 baths: Number(formData.baths),
                 sqft: Number(formData.sqft),
+                sqft: Number(formData.sqft),
                 type: formData.type,
+                listing_type: formData.listing_type,
                 description: formData.description,
-                image_url: formData.image_url,
+                image_url: imagesArray[0] || null, // Keep main image for backward compatibility
+                images: imagesArray, // New array column
                 features: formData.features.split(',').map(f => f.trim()).filter(f => f !== '')
             };
 
@@ -98,7 +105,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({ onClose, onSuccess, 
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="col-span-2">
+                        <div className="col-span-1">
                             <label className="block text-sm font-medium text-slate-700 mb-2">Título de la Propiedad</label>
                             <input
                                 name="title"
@@ -108,6 +115,19 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({ onClose, onSuccess, 
                                 className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none"
                                 placeholder="Ej: Villa Moderna en la Costa"
                             />
+                        </div>
+
+                        <div className="col-span-1">
+                            <label className="block text-sm font-medium text-slate-700 mb-2">Operación</label>
+                            <select
+                                name="listing_type"
+                                value={formData.listing_type}
+                                onChange={handleChange}
+                                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                            >
+                                <option value="sale">Venta</option>
+                                <option value="rent">Alquiler</option>
+                            </select>
                         </div>
 
                         <div>
@@ -221,19 +241,27 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({ onClose, onSuccess, 
                         </div>
 
                         <div className="col-span-2">
-                            <label className="block text-sm font-medium text-slate-700 mb-2">URL Imagen (Temporal)</label>
-                            <div className="flex gap-2">
-                                <input
-                                    name="image_url"
-                                    value={formData.image_url}
-                                    onChange={handleChange}
-                                    className="flex-1 px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none"
-                                />
-                                <div className="w-12 h-12 bg-gray-100 rounded-lg overflow-hidden">
-                                    <img src={formData.image_url} alt="Preview" className="w-full h-full object-cover" />
+                            <label className="block text-sm font-medium text-slate-700 mb-2">URLs de Imágenes (una por línea)</label>
+                            <textarea
+                                name="image_url"
+                                value={formData.image_url}
+                                onChange={handleChange}
+                                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                rows={4}
+                                placeholder={`https://ejemplo.com/foto1.jpg\nhttps://ejemplo.com/foto2.jpg`}
+                            />
+                            <p className="text-xs text-gray-400 mt-1">* La primera imagen será la portada.</p>
+
+                            {/* Preview of first image */}
+                            {formData.image_url && (
+                                <div className="mt-2 flex gap-2 overflow-x-auto pb-2">
+                                    {formData.image_url.split('\n').filter(url => url.trim()).map((url, idx) => (
+                                        <div key={idx} className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 border border-gray-200">
+                                            <img src={url} alt={`Preview ${idx}`} className="w-full h-full object-cover" />
+                                        </div>
+                                    ))}
                                 </div>
-                            </div>
-                            <p className="text-xs text-gray-400 mt-1">* Por ahora usamos una URL. Más adelante implementaremos subida de imágenes.</p>
+                            )}
                         </div>
                     </div>
 
