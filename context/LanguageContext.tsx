@@ -64,6 +64,7 @@ const translations: Translations = {
         'detail.price_label': 'Precio de venta',
         'detail.request_visit': 'Solicitar Visita',
         'detail.contact_agent': 'Contactar Agente',
+        'detail.location': 'Ubicación',
         'detail.chat_help': '¿Tienes preguntas? Usa nuestro chat de IA.',
 
         // Footer
@@ -141,6 +142,7 @@ const translations: Translations = {
         'detail.price_label': 'Sale Price',
         'detail.request_visit': 'Request Visit',
         'detail.contact_agent': 'Contact Agent',
+        'detail.location': 'Location',
         'detail.chat_help': 'Questions? Use our AI chat.',
 
         // Footer

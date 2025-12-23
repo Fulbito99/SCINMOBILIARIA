@@ -25,7 +25,8 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({ onClose, onSuccess, 
         description: initialData?.description || '',
         // Initialize images from array if available, else single url, else random
         image_url: initialData?.images?.join('\n') || initialData?.image_url || 'https://picsum.photos/800/600?random=' + Math.floor(Math.random() * 100),
-        features: initialData?.features?.join(', ') || ''
+        features: initialData?.features?.join(', ') || '',
+        map_url: initialData?.map_url || ''
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -58,7 +59,8 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({ onClose, onSuccess, 
                 description: formData.description,
                 image_url: imagesArray[0] || null, // Keep main image for backward compatibility
                 images: imagesArray, // New array column
-                features: formData.features.split(',').map(f => f.trim()).filter(f => f !== '')
+                features: formData.features.split(',').map(f => f.trim()).filter(f => f !== ''),
+                map_url: formData.map_url
             };
 
             let error;
@@ -154,6 +156,17 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({ onClose, onSuccess, 
                                 onChange={handleChange}
                                 className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-red-500 outline-none"
                                 placeholder="Madrid, España"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-slate-700 mb-2">Link de Google Maps</label>
+                            <input
+                                name="map_url"
+                                value={formData.map_url || ''}
+                                onChange={handleChange}
+                                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-red-500 outline-none"
+                                placeholder="Pegar enlace de Google Maps"
                             />
                         </div>
 

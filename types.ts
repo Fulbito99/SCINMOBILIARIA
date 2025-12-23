@@ -25,6 +25,7 @@ export interface Property {
   images?: string[]; // Array of image URLs
   description: string;
   features: string[];
+  map_url?: string;
 }
 
 export interface ChatMessage {

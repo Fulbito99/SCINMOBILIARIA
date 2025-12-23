@@ -234,27 +234,27 @@ function InnerApp() {
 
 
   const HeroSection = () => (
-    <div className="relative bg-slate-900 h-[500px] flex items-center justify-center overflow-hidden">
+    <div className="relative h-[600px] flex items-center justify-center overflow-hidden">
       <div className="absolute inset-0">
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-900/90 to-slate-900/40 z-10"></div>
         <img
-          src="/hero-pattern.png"
-          alt="Fondo SC Inmobiliaria"
-          className="w-full h-full object-cover opacity-60"
+          src="/hero-bg-custom.png"
+          alt="SC Inmobiliaria"
+          className="w-full h-full object-cover"
         />
       </div>
-      <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
-        <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
-          {t('hero.title.prefix')} <span className="text-red-400">{t('hero.title.suffix')}</span>
+      <div className="relative z-20 text-center px-4 max-w-5xl mx-auto">
+        <h1 className="text-5xl md:text-7xl font-bold text-white mb-6 leading-tight tracking-tight">
+          Encuentra tu hogar <span className="text-red-500">ideal</span>
         </h1>
-        <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-          {t('hero.subtitle')}
+        <p className="text-xl md:text-2xl text-slate-200 mb-10 max-w-3xl mx-auto font-light">
+          Explora nuestra exclusiva colección de casas, apartamentos y villas en las mejores ubicaciones.
         </p>
         <button
           onClick={() => navigateTo('properties')}
-          className="bg-red-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-red-700 transition flex items-center justify-center gap-2 mx-auto"
+          className="bg-red-600 text-white px-10 py-4 rounded-xl font-bold text-lg hover:bg-red-700 transition shadow-xl hover:shadow-red-900/20 flex items-center justify-center gap-2 mx-auto transform hover:-translate-y-1 duration-200"
         >
-          {t('hero.cta')}
-          <ArrowRight size={18} />
+          Ver Propiedades <ArrowRight size={20} />
         </button>
       </div>
     </div>
@@ -292,51 +292,52 @@ function InnerApp() {
     <div className="animate-fade-in">
       {HeroSection()}
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">{t('featured.title')}</h2>
-          <p className="text-slate-500 dark:text-slate-400">{t('featured.subtitle')}</p>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
+        <div className="text-center mb-16">
+          <h2 className="text-4xl font-bold text-slate-900 dark:text-white mb-4">{t('featured.title')}</h2>
+          <p className="text-slate-500 dark:text-slate-400 text-lg max-w-2xl mx-auto">{t('featured.subtitle')}</p>
         </div>
         {PropertiesGrid({ limit: 3 })}
-        <div className="text-center mt-12">
+        <div className="text-center mt-16">
           <button
             onClick={() => navigateTo('properties')}
-            className="inline-flex items-center text-red-600 font-bold hover:text-red-800 transition"
+            className="inline-flex items-center text-red-600 font-bold hover:text-red-800 transition text-lg group"
           >
-            {t('featured.view_all')} <ArrowRight size={16} className="ml-2" />
+            {t('featured.view_all')} <ArrowRight size={20} className="ml-2 group-hover:translate-x-1 transition-transform" />
           </button>
         </div>
       </div>
 
-      <div className="bg-slate-100 dark:bg-slate-800/50 py-16">
+      <div className="bg-slate-50 dark:bg-slate-800/50 py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
             <div>
-              <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-6">{t('why.title')}</h2>
-              <ul className="space-y-4">
+              <h2 className="text-4xl font-bold text-slate-900 dark:text-white mb-8">{t('why.title')}</h2>
+              <ul className="space-y-6">
                 {[
                   t('why.point1'),
                   t('why.point2'),
                   t('why.point3'),
                   t('why.point4')
                 ].map((item, idx) => (
-                  <li key={idx} className="flex items-center gap-3">
-                    <div className="bg-red-600 rounded-full p-1">
-                      <ArrowRight size={12} className="text-white" />
+                  <li key={idx} className="flex items-start gap-4">
+                    <div className="bg-red-100 dark:bg-red-900/30 rounded-full p-2 mt-1">
+                      <ArrowRight size={16} className="text-red-600 dark:text-red-400" />
                     </div>
-                    <span className="text-slate-700 dark:text-slate-300">{item}</span>
+                    <span className="text-lg text-slate-700 dark:text-slate-300">{item}</span>
                   </li>
                 ))}
               </ul>
               <button
                 onClick={() => navigateTo('contact')}
-                className="mt-8 bg-slate-900 dark:bg-red-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-slate-800 dark:hover:bg-red-700 transition"
+                className="mt-10 bg-slate-900 dark:bg-red-600 text-white px-8 py-4 rounded-xl font-medium hover:bg-slate-800 dark:hover:bg-red-700 transition shadow-lg"
               >
                 {t('why.cta')}
               </button>
             </div>
-            <div className="relative h-80 rounded-2xl overflow-hidden shadow-xl">
+            <div className="relative h-[500px] rounded-3xl overflow-hidden shadow-2xl">
               <img src="https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&q=80" alt="Meeting" className="w-full h-full object-cover" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
             </div>
           </div>
         </div>
@@ -554,7 +555,7 @@ function InnerApp() {
         {/* Image Gallery */}
         {(detailView.images && detailView.images.length > 1) && (
           <div className="max-w-7xl mx-auto px-4 pt-8">
-            <h3 className="text-xl font-bold text-slate-900 mb-4">Galería de Fotos</h3>
+            <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">Galería de Fotos</h3>
             <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
               {detailView.images.map((img, idx) => (
                 <div
@@ -572,41 +573,71 @@ function InnerApp() {
         <div className="max-w-7xl mx-auto px-4 py-12 grid grid-cols-1 lg:grid-cols-3 gap-12">
           <div className="lg:col-span-2 space-y-8">
             <div>
-              <h2 className="text-2xl font-bold text-slate-900 mb-4">{t('detail.about')}</h2>
-              <p className="text-slate-600 leading-relaxed text-lg">{detailView.description}</p>
+              <h2 className="text-2xl font-bold text-slate-900 dark:text-white mb-4">{t('detail.about')}</h2>
+              <p className="text-slate-600 dark:text-slate-300 leading-relaxed text-lg">{detailView.description}</p>
             </div>
 
             <div>
-              <h3 className="text-xl font-bold text-slate-900 mb-4">{t('detail.features')}</h3>
+              <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">{t('detail.features')}</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {detailView.features.map((feature, idx) => (
-                  <div key={idx} className="bg-red-50 text-red-800 px-4 py-2 rounded-lg text-sm font-medium text-center">
+                  <div key={idx} className="bg-red-50 dark:bg-red-900/20 text-red-800 dark:text-red-200 px-4 py-2 rounded-lg text-sm font-medium text-center">
                     {feature}
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm grid grid-cols-3 gap-4 text-center">
+            <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-gray-200 dark:border-slate-700 shadow-sm grid grid-cols-3 gap-4 text-center">
               <div>
                 <p className="text-slate-400 text-sm uppercase tracking-wide font-semibold">{t('detail.beds')}</p>
-                <p className="text-3xl font-bold text-slate-800">{detailView.beds}</p>
+                <p className="text-3xl font-bold text-slate-800 dark:text-white">{detailView.beds}</p>
               </div>
               <div>
                 <p className="text-slate-400 text-sm uppercase tracking-wide font-semibold">{t('detail.baths')}</p>
-                <p className="text-3xl font-bold text-slate-800">{detailView.baths}</p>
+                <p className="text-3xl font-bold text-slate-800 dark:text-white">{detailView.baths}</p>
               </div>
               <div>
                 <p className="text-slate-400 text-sm uppercase tracking-wide font-semibold">{t('detail.area')}</p>
-                <p className="text-3xl font-bold text-slate-800">{detailView.sqft} <span className="text-sm">m²</span></p>
+                <p className="text-3xl font-bold text-slate-800 dark:text-white">{detailView.sqft} <span className="text-sm">m²</span></p>
               </div>
             </div>
+
+            {/* Google Maps Section */}
+            {detailView.map_url && (
+              <div className="mt-8">
+                <h3 className="text-xl font-bold text-slate-900 dark:text-white mb-4">{t('detail.location')}</h3>
+                <div className="bg-gray-100 rounded-xl overflow-hidden h-80 shadow-sm border border-gray-200">
+                  <iframe
+                    width="100%"
+                    height="100%"
+                    style={{ border: 0 }}
+                    loading="lazy"
+                    allowFullScreen
+                    referrerPolicy="no-referrer-when-downgrade"
+                    src={(() => {
+                      const url = detailView.map_url;
+                      // Case 1: Copied full iframe code
+                      const srcMatch = url.match(/src="([^"]+)"/);
+                      if (srcMatch) return srcMatch[1];
+
+                      // Case 2: Already an embed link
+                      if (url.includes('google.com/maps/embed')) return url;
+
+                      // Case 3: Fallback - try to search query (Legacy embed)
+                      // This is more robust for general URLs or addresses
+                      return `https://maps.google.com/maps?q=${encodeURIComponent(url)}&t=&z=13&ie=UTF8&iwloc=&output=embed`;
+                    })()}
+                  ></iframe>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="lg:col-span-1">
-            <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100 sticky top-24">
-              <p className="text-slate-500 text-sm mb-1">{t('detail.price_label')}</p>
-              <p className="text-4xl font-bold text-slate-900 mb-6">
+            <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-lg border border-gray-100 dark:border-slate-700 sticky top-24">
+              <p className="text-slate-500 dark:text-slate-400 text-sm mb-1">{t('detail.price_label')}</p>
+              <p className="text-4xl font-bold text-slate-900 dark:text-white mb-6">
                 {detailView.currency === 'EUR' && '€'}
                 {detailView.currency === 'USD' && 'U$S'}
                 {(detailView.currency === 'ARS' || !['EUR', 'USD'].includes(detailView.currency)) && '$'}
@@ -623,13 +654,13 @@ function InnerApp() {
                 {t('detail.contact_agent')}
               </a>
 
-              <div className="mt-6 pt-6 border-t border-gray-100 text-center text-sm text-slate-500">
+              <div className="mt-6 pt-6 border-t border-gray-100 dark:border-slate-700 text-center text-sm text-slate-500 dark:text-slate-400">
                 <p>{t('detail.chat_help')}</p>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </div >
     );
   };
 
@@ -642,7 +673,7 @@ function InnerApp() {
             <div className="flex items-center gap-4">
               {ThemeToggle()}
               <div className="flex items-center cursor-pointer gap-2" onClick={() => navigateTo('home')}>
-                <img src="/logo.png" alt="SC Inmobiliaria" className="h-12 w-auto object-contain" />
+                <img src="/logo-sc.png" alt="SC Inmobiliaria" className="h-12 w-auto object-contain" />
                 <span className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">SC <span className="text-red-600">INMOBILIARIA</span></span>
               </div>
             </div>
@@ -723,9 +754,7 @@ function InnerApp() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div className="col-span-1 md:col-span-2">
               <div className="flex items-center mb-4">
-                <div className="bg-red-600 p-1.5 rounded-lg mr-2">
-                  <Home size={20} />
-                </div>
+                <img src="/logo-sc.png" alt="SC Logo" className="h-8 w-auto mr-2" />
                 <span className="text-xl font-bold">SC <span className="text-red-500">INMOBILIARIA</span></span>
               </div>
               <p className="text-slate-400 max-w-md">
@@ -754,9 +783,9 @@ function InnerApp() {
           <div className="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center">
             <p className="text-slate-500 text-sm">{t('footer.rights')}</p>
             <div className="flex space-x-4 mt-4 md:mt-0">
-              <div className="w-5 h-5 bg-slate-700 rounded-full hover:bg-indigo-500 transition cursor-pointer"></div>
-              <div className="w-5 h-5 bg-slate-700 rounded-full hover:bg-indigo-500 transition cursor-pointer"></div>
-              <div className="w-5 h-5 bg-slate-700 rounded-full hover:bg-indigo-500 transition cursor-pointer"></div>
+              <div className="w-5 h-5 bg-slate-700 rounded-full hover:bg-red-500 transition cursor-pointer"></div>
+              <div className="w-5 h-5 bg-slate-700 rounded-full hover:bg-red-500 transition cursor-pointer"></div>
+              <div className="w-5 h-5 bg-slate-700 rounded-full hover:bg-red-500 transition cursor-pointer"></div>
             </div>
           </div>
         </div>
