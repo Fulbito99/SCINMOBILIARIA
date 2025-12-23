@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { supabase } from './services/supabase';
-import { Home, Search, Menu, X, ArrowRight, Phone, Mail, MapPin, User, MessageCircle, Sun, Moon } from 'lucide-react';
+import { Home, Search, Menu, X, ArrowRight, Phone, Mail, MapPin, User, MessageCircle, Sun, Moon, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Property } from './types';
 import { PROPERTY_TYPES_MAP } from './utils/translations';
 import { CONTACT_INFO } from './constants';
@@ -11,6 +11,63 @@ import { Dashboard } from './components/Dashboard';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
 
 type ViewState = 'home' | 'properties' | 'contact' | 'login' | 'dashboard';
+
+// Moved outside to prevent re-creation on every render
+const ContactForm = () => {
+  const { t } = useLanguage();
+  const [formData, setFormData] = useState({
+    name: '',
+    phone: '',
+    message: ''
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const text = `Hola, mi nombre es ${formData.name}. Mi teléfono es ${formData.phone}.\n\nConsulta: ${formData.message}`;
+    const whatsappLink = `https://wa.me/5493884362820?text=${encodeURIComponent(text)}`;
+    window.open(whatsappLink, '_blank');
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">{t('contact.name')}</label>
+          <input
+            type="text"
+            required
+            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition bg-gray-50 focus:bg-white"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 mb-2">{t('contact.phone')}</label>
+          <input
+            type="tel"
+            required
+            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition bg-gray-50 focus:bg-white"
+            value={formData.phone}
+            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+          />
+        </div>
+      </div>
+      <div>
+        <label className="block text-sm font-medium text-slate-700 mb-2">{t('contact.message')}</label>
+        <textarea
+          rows={5}
+          required
+          className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition bg-gray-50 focus:bg-white"
+          value={formData.message}
+          onChange={(e) => setFormData({ ...formData, message: e.target.value })}
+        ></textarea>
+      </div>
+      <button type="submit" className="w-full bg-red-600 text-white py-4 rounded-xl font-bold hover:bg-red-700 transition shadow-lg hover:shadow-red-200">
+        {t('contact.send')}
+      </button>
+    </form>
+  );
+};
 
 function InnerApp() {
   const { t, language, setLanguage } = useLanguage();
@@ -27,8 +84,10 @@ function InnerApp() {
   const [currentView, setCurrentView] = useState<ViewState>(getHashView());
   const [properties, setProperties] = useState<Property[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedType, setSelectedType] = useState<string>('Todos');
+  const [selectedListingType, setSelectedListingType] = useState<'all' | 'sale' | 'rent'>('all');
   const [detailView, setDetailView] = useState<Property | null>(null);
   const [userName, setUserName] = useState<string | null>(null);
   const [simpleLightboxOpen, setSimpleLightboxOpen] = useState(false);
@@ -37,11 +96,21 @@ function InnerApp() {
   // Theme State
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('theme') === 'dark' ||
-        (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches);
+      return localStorage.getItem('theme') === 'dark';
     }
     return false;
   });
+
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+
+  // Debounce effect
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchTerm]);
 
   useEffect(() => {
     if (darkMode) {
@@ -57,10 +126,10 @@ function InnerApp() {
   const ThemeToggle = () => (
     <button
       onClick={() => setDarkMode(!darkMode)}
-      className={`relative w-14 h-7 rounded-full transition-colors duration-300 focus:outline-none ${darkMode ? 'bg-indigo-600' : 'bg-slate-300'}`}
+      className={`relative w-14 h-7 rounded-full transition-colors duration-300 focus:outline-none ${darkMode ? 'bg-red-600' : 'bg-slate-300'}`}
     >
       <div className={`absolute top-1 left-1 w-5 h-5 rounded-full transform transition-transform duration-300 flex items-center justify-center bg-white shadow-sm ${darkMode ? 'translate-x-7' : 'translate-x-0'}`}>
-        {darkMode ? <Moon size={12} className="text-indigo-600" /> : <Sun size={12} className="text-orange-500" />}
+        {darkMode ? <Moon size={12} className="text-red-600" /> : <Sun size={12} className="text-orange-500" />}
       </div>
     </button>
   );
@@ -139,12 +208,13 @@ function InnerApp() {
 
   const filteredProperties = useMemo(() => {
     return properties.filter(p => {
-      const matchesSearch = p.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.location.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesSearch = p.title.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) ||
+        p.location.toLowerCase().includes(debouncedSearchTerm.toLowerCase());
       const matchesType = selectedType === 'Todos' || p.type === selectedType;
-      return matchesSearch && matchesType;
+      const matchesListingType = selectedListingType === 'all' || p.listing_type === selectedListingType;
+      return matchesSearch && matchesType && matchesListingType;
     });
-  }, [searchTerm, selectedType, properties]);
+  }, [debouncedSearchTerm, selectedType, selectedListingType, properties]);
 
   const uniqueTypes = ['Todos', ...Array.from(new Set(properties.map(p => p.type)))];
 
@@ -160,80 +230,28 @@ function InnerApp() {
 
   // --- SUB-COMPONENTS ---
 
-  const ContactForm = () => {
-    const [formData, setFormData] = useState({
-      name: '',
-      phone: '',
-      message: ''
-    });
+  // ContactForm moved outside
 
-    const handleSubmit = (e: React.FormEvent) => {
-      e.preventDefault();
-      const text = `Hola, mi nombre es ${formData.name}. Mi teléfono es ${formData.phone}.\n\nConsulta: ${formData.message}`;
-      const whatsappLink = `https://wa.me/5493884362820?text=${encodeURIComponent(text)}`;
-      window.open(whatsappLink, '_blank');
-    };
-
-    return (
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">{t('contact.name')}</label>
-            <input
-              type="text"
-              required
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition bg-gray-50 focus:bg-white"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-slate-700 mb-2">{t('contact.phone')}</label>
-            <input
-              type="tel"
-              required
-              className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition bg-gray-50 focus:bg-white"
-              value={formData.phone}
-              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-            />
-          </div>
-        </div>
-        <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">{t('contact.message')}</label>
-          <textarea
-            rows={5}
-            required
-            className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition bg-gray-50 focus:bg-white"
-            value={formData.message}
-            onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-          ></textarea>
-        </div>
-        <button type="submit" className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold hover:bg-indigo-700 transition shadow-lg hover:shadow-indigo-200">
-          {t('contact.send')}
-        </button>
-      </form>
-    );
-  };
 
   const HeroSection = () => (
     <div className="relative bg-slate-900 h-[500px] flex items-center justify-center overflow-hidden">
       <div className="absolute inset-0">
         <img
-          src="https://tripin.travel/wp-content/uploads/2020/05/cerro-siete-colores-web-1024x682.jpg"
-          alt="Paisaje Jujuy - Cerro de los 7 Colores"
+          src="/hero-pattern.png"
+          alt="Fondo SC Inmobiliaria"
           className="w-full h-full object-cover opacity-60"
         />
       </div>
       <div className="relative z-10 text-center px-4 max-w-4xl mx-auto">
         <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 leading-tight">
-          {t('hero.title.prefix')} <span className="text-indigo-400">{t('hero.title.suffix')}</span>
+          {t('hero.title.prefix')} <span className="text-red-400">{t('hero.title.suffix')}</span>
         </h1>
         <p className="text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
           {t('hero.subtitle')}
         </p>
         <button
           onClick={() => navigateTo('properties')}
-          className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-indigo-700 transition flex items-center justify-center gap-2 mx-auto"
+          className="bg-red-600 text-white px-8 py-3 rounded-xl font-bold hover:bg-red-700 transition flex items-center justify-center gap-2 mx-auto"
         >
           {t('hero.cta')}
           <ArrowRight size={18} />
@@ -260,7 +278,7 @@ function InnerApp() {
             <p className="text-slate-400 text-lg">{t('properties.no_results')}</p>
             <button
               onClick={() => { setSearchTerm(''); setSelectedType('Todos'); }}
-              className="mt-4 text-indigo-600 font-medium hover:underline"
+              className="mt-4 text-red-600 font-medium hover:underline"
             >
               {t('properties.clear_filters')}
             </button>
@@ -272,29 +290,29 @@ function InnerApp() {
 
   const HomeView = () => (
     <div className="animate-fade-in">
-      <HeroSection />
+      {HeroSection()}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-slate-900 mb-4">{t('featured.title')}</h2>
-          <p className="text-slate-500">{t('featured.subtitle')}</p>
+          <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-4">{t('featured.title')}</h2>
+          <p className="text-slate-500 dark:text-slate-400">{t('featured.subtitle')}</p>
         </div>
-        <PropertiesGrid limit={3} />
+        {PropertiesGrid({ limit: 3 })}
         <div className="text-center mt-12">
           <button
             onClick={() => navigateTo('properties')}
-            className="inline-flex items-center text-indigo-600 font-bold hover:text-indigo-800 transition"
+            className="inline-flex items-center text-red-600 font-bold hover:text-red-800 transition"
           >
             {t('featured.view_all')} <ArrowRight size={16} className="ml-2" />
           </button>
         </div>
       </div>
 
-      <div className="bg-slate-100 py-16">
+      <div className="bg-slate-100 dark:bg-slate-800/50 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
             <div>
-              <h2 className="text-3xl font-bold text-slate-900 mb-6">{t('why.title')}</h2>
+              <h2 className="text-3xl font-bold text-slate-900 dark:text-white mb-6">{t('why.title')}</h2>
               <ul className="space-y-4">
                 {[
                   t('why.point1'),
@@ -303,16 +321,16 @@ function InnerApp() {
                   t('why.point4')
                 ].map((item, idx) => (
                   <li key={idx} className="flex items-center gap-3">
-                    <div className="bg-indigo-600 rounded-full p-1">
+                    <div className="bg-red-600 rounded-full p-1">
                       <ArrowRight size={12} className="text-white" />
                     </div>
-                    <span className="text-slate-700">{item}</span>
+                    <span className="text-slate-700 dark:text-slate-300">{item}</span>
                   </li>
                 ))}
               </ul>
               <button
                 onClick={() => navigateTo('contact')}
-                className="mt-8 bg-slate-900 text-white px-6 py-3 rounded-lg font-medium hover:bg-slate-800 transition"
+                className="mt-8 bg-slate-900 dark:bg-red-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-slate-800 dark:hover:bg-red-700 transition"
               >
                 {t('why.cta')}
               </button>
@@ -338,23 +356,46 @@ function InnerApp() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 mb-8">
           <div className="flex flex-col md:flex-row gap-4 justify-between items-center">
-            <div className="w-full md:w-1/2 relative">
+            <div className="w-full md:w-1/3 relative">
               <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
               <input
                 type="text"
                 placeholder={t('properties.search_placeholder')}
-                className="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition"
+                className="w-full pl-12 pr-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-red-100 transition"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
+
+            {/* Listing Type Filter */}
+            <div className="flex bg-gray-100 p-1 rounded-lg">
+              <button
+                onClick={() => setSelectedListingType('all')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition ${selectedListingType === 'all' ? 'bg-white text-red-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                Todos
+              </button>
+              <button
+                onClick={() => setSelectedListingType('sale')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition ${selectedListingType === 'sale' ? 'bg-white text-red-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                Venta
+              </button>
+              <button
+                onClick={() => setSelectedListingType('rent')}
+                className={`px-4 py-2 rounded-md text-sm font-medium transition ${selectedListingType === 'rent' ? 'bg-white text-red-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+              >
+                Alquiler
+              </button>
+            </div>
+
             <div className="w-full md:w-auto flex gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
               {uniqueTypes.map((type) => (
                 <button
                   key={type}
                   onClick={() => setSelectedType(type)}
                   className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${selectedType === type
-                    ? 'bg-indigo-600 text-white'
+                    ? 'bg-red-600 text-white'
                     : 'bg-gray-100 text-slate-600 hover:bg-gray-200'
                     }`}
                 >
@@ -365,7 +406,7 @@ function InnerApp() {
           </div>
         </div>
 
-        <PropertiesGrid />
+        {PropertiesGrid({})}
       </div>
     </div>
   );
@@ -384,17 +425,17 @@ function InnerApp() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-start">
           <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
-            <h3 className="text-lg font-bold text-indigo-600 mb-1 uppercase tracking-wide">¿Quiere tasar su propiedad?</h3>
+            <h3 className="text-lg font-bold text-red-600 mb-1 uppercase tracking-wide">¿Quiere tasar su propiedad?</h3>
             <h2 className="text-2xl font-bold text-slate-900 mb-6">{t('contact.form_title')}</h2>
             <ContactForm />
           </div>
 
           <div className="space-y-8">
-            <div className="bg-indigo-50 rounded-2xl p-8 border border-indigo-100">
-              <h3 className="text-xl font-bold text-indigo-900 mb-6">{t('contact.info_title')}</h3>
+            <div className="bg-red-50 rounded-2xl p-8 border border-red-100">
+              <h3 className="text-xl font-bold text-red-900 mb-6">{t('contact.info_title')}</h3>
               <div className="space-y-6">
                 <div className="flex items-start gap-4">
-                  <div className="bg-white p-3 rounded-full shadow-sm text-indigo-600">
+                  <div className="bg-white p-3 rounded-full shadow-sm text-red-600">
                     <MapPin size={24} />
                   </div>
                   <div>
@@ -404,7 +445,7 @@ function InnerApp() {
                 </div>
 
                 <div className="flex items-start gap-4">
-                  <div className="bg-white p-3 rounded-full shadow-sm text-indigo-600">
+                  <div className="bg-white p-3 rounded-full shadow-sm text-red-600">
                     <Phone size={24} />
                   </div>
                   <div>
@@ -414,7 +455,7 @@ function InnerApp() {
                 </div>
 
                 <div className="flex items-start gap-4">
-                  <div className="bg-white p-3 rounded-full shadow-sm text-indigo-600">
+                  <div className="bg-white p-3 rounded-full shadow-sm text-red-600">
                     <Mail size={24} />
                   </div>
                   <div>
@@ -458,15 +499,41 @@ function InnerApp() {
     if (!detailView) return null;
     return (
       <div className="animate-fade-in">
-        <div className="relative">
-          <div className="h-[50vh] min-h-[400px] overflow-hidden">
+        <div className="relative group">
+          <div className="h-[50vh] min-h-[400px] overflow-hidden relative">
             {/* Main Cover Image */}
             <img
-              src={detailView.images && detailView.images.length > 0 ? detailView.images[0] : detailView.imageUrl}
+              src={detailView.images && detailView.images.length > 0
+                ? detailView.images[currentImageIndex % detailView.images.length]
+                : detailView.imageUrl}
               alt={detailView.title}
-              className="w-full h-full object-cover"
+              className="w-full h-full object-cover transition-all duration-500"
             />
             <div className="absolute inset-0 bg-black/30"></div>
+
+            {/* Carousel Navigation */}
+            {detailView.images && detailView.images.length > 1 && (
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentImageIndex(prev => (prev === 0 ? detailView.images!.length - 1 : prev - 1));
+                  }}
+                  className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full backdrop-blur-sm transition opacity-0 group-hover:opacity-100"
+                >
+                  <ChevronLeft size={24} />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setCurrentImageIndex(prev => (prev + 1) % detailView.images!.length);
+                  }}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full backdrop-blur-sm transition opacity-0 group-hover:opacity-100"
+                >
+                  <ChevronRight size={24} />
+                </button>
+              </>
+            )}
           </div>
 
           <div className="absolute bottom-0 left-0 right-0 p-8 text-white max-w-7xl mx-auto z-10">
@@ -478,7 +545,7 @@ function InnerApp() {
             </button>
             <h1 className="text-4xl md:text-5xl font-bold mb-2 text-shadow">{detailView.title}</h1>
             <div className="flex items-center gap-4 text-lg">
-              <span className="bg-indigo-600 px-3 py-1 rounded text-sm font-bold shadow-sm">{t(`type.${detailView.type}`) || detailView.type}</span>
+              <span className="bg-red-600 px-3 py-1 rounded text-sm font-bold shadow-sm">{t(`type.${detailView.type}`) || detailView.type}</span>
               <span className="flex items-center gap-1 text-white/90"><MapPin size={18} /> {detailView.location}</span>
             </div>
           </div>
@@ -488,9 +555,13 @@ function InnerApp() {
         {(detailView.images && detailView.images.length > 1) && (
           <div className="max-w-7xl mx-auto px-4 pt-8">
             <h3 className="text-xl font-bold text-slate-900 mb-4">Galería de Fotos</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {detailView.images.slice(1).map((img, idx) => (
-                <div key={idx} className="h-48 rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition shadow-sm">
+            <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
+              {detailView.images.map((img, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => setCurrentImageIndex(idx)}
+                  className={`h-24 rounded-lg overflow-hidden cursor-pointer transition shadow-sm border-2 ${currentImageIndex === idx ? 'border-red-600 opacity-100' : 'border-transparent opacity-60 hover:opacity-100'}`}
+                >
                   <img src={img} alt={`Gallery ${idx}`} className="w-full h-full object-cover" />
                 </div>
               ))}
@@ -509,7 +580,7 @@ function InnerApp() {
               <h3 className="text-xl font-bold text-slate-900 mb-4">{t('detail.features')}</h3>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 {detailView.features.map((feature, idx) => (
-                  <div key={idx} className="bg-indigo-50 text-indigo-800 px-4 py-2 rounded-lg text-sm font-medium text-center">
+                  <div key={idx} className="bg-red-50 text-red-800 px-4 py-2 rounded-lg text-sm font-medium text-center">
                     {feature}
                   </div>
                 ))}
@@ -569,32 +640,30 @@ function InnerApp() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="relative flex justify-between items-center h-20">
             <div className="flex items-center gap-4">
-              <ThemeToggle />
-              <div className="flex items-center cursor-pointer" onClick={() => navigateTo('home')}>
-                <div className="bg-indigo-600 p-2 rounded-lg text-white mr-2">
-                  <Home size={24} />
-                </div>
-                <span className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">INMOBILIARIA <span className="text-indigo-600 dark:text-indigo-400">CONESA</span></span>
+              {ThemeToggle()}
+              <div className="flex items-center cursor-pointer gap-2" onClick={() => navigateTo('home')}>
+                <img src="/logo.png" alt="SC Inmobiliaria" className="h-12 w-auto object-contain" />
+                <span className="text-xl font-bold text-slate-900 dark:text-white tracking-tight">SC <span className="text-red-600">INMOBILIARIA</span></span>
               </div>
             </div>
 
             <div className="hidden md:flex absolute left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 space-x-8 text-sm font-medium text-slate-600 dark:text-slate-300">
-              <button onClick={() => navigateTo('home')} className={`hover:text-indigo-600 dark:hover:text-indigo-400 transition ${currentView === 'home' ? 'text-indigo-600 dark:text-indigo-400' : ''}`}>{t('nav.home')}</button>
-              <button onClick={() => navigateTo('properties')} className={`hover:text-indigo-600 dark:hover:text-indigo-400 transition ${currentView === 'properties' ? 'text-indigo-600 dark:text-indigo-400' : ''}`}>{t('nav.properties')}</button>
-              <button onClick={() => navigateTo('contact')} className={`hover:text-indigo-600 dark:hover:text-indigo-400 transition ${currentView === 'contact' ? 'text-indigo-600 dark:text-indigo-400' : ''}`}>{t('nav.contact')}</button>
+              <button onClick={() => navigateTo('home')} className={`hover:text-red-600 dark:hover:text-red-400 transition ${currentView === 'home' ? 'text-red-600 dark:text-red-400' : ''}`}>{t('nav.home')}</button>
+              <button onClick={() => navigateTo('properties')} className={`hover:text-red-600 dark:hover:text-red-400 transition ${currentView === 'properties' ? 'text-red-600 dark:text-red-400' : ''}`}>{t('nav.properties')}</button>
+              <button onClick={() => navigateTo('contact')} className={`hover:text-red-600 dark:hover:text-red-400 transition ${currentView === 'contact' ? 'text-red-600 dark:text-red-400' : ''}`}>{t('nav.contact')}</button>
             </div>
 
             <div className="hidden md:flex items-center gap-4">
               <div className="flex bg-gray-100 dark:bg-slate-800 rounded-lg p-1">
                 <button
                   onClick={() => setLanguage('es')}
-                  className={`px-2 py-1 rounded text-xs font-bold transition ${language === 'es' ? 'bg-white dark:bg-slate-700 shadow text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}
+                  className={`px-2 py-1 rounded text-xs font-bold transition ${language === 'es' ? 'bg-white dark:bg-slate-700 shadow text-red-600 dark:text-red-400' : 'text-slate-500 dark:text-slate-400'}`}
                 >
                   ES
                 </button>
                 <button
                   onClick={() => setLanguage('en')}
-                  className={`px-2 py-1 rounded text-xs font-bold transition ${language === 'en' ? 'bg-white dark:bg-slate-700 shadow text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'}`}
+                  className={`px-2 py-1 rounded text-xs font-bold transition ${language === 'en' ? 'bg-white dark:bg-slate-700 shadow text-red-600 dark:text-red-400' : 'text-slate-500 dark:text-slate-400'}`}
                 >
                   EN
                 </button>
@@ -602,7 +671,7 @@ function InnerApp() {
 
               <button
                 onClick={() => navigateTo(userName ? 'dashboard' : 'login')}
-                className="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition flex items-center gap-1"
+                className="text-sm font-medium text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 transition flex items-center gap-1"
               >
                 <div className="p-2 bg-gray-100 dark:bg-slate-800 rounded-full hover:bg-gray-200 dark:hover:bg-slate-700 transition">
                   <User size={18} />
@@ -612,7 +681,7 @@ function InnerApp() {
             </div>
 
             <div className="md:hidden flex items-center gap-4">
-              <ThemeToggle />
+              {ThemeToggle()}
               <button onClick={() => setLanguage(language === 'es' ? 'en' : 'es')} className="font-bold text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 px-2 py-1 rounded text-xs">
                 {language.toUpperCase()}
               </button>
@@ -626,10 +695,10 @@ function InnerApp() {
         {mobileMenuOpen && (
           <div className="md:hidden bg-white border-t border-gray-100 absolute w-full pb-4 shadow-lg">
             <div className="px-4 pt-2 pb-3 space-y-1">
-              <button onClick={() => navigateTo('home')} className="block w-full text-left px-3 py-2 text-base font-medium text-slate-700 hover:text-indigo-600 hover:bg-gray-50 rounded-md">{t('nav.home')}</button>
-              <button onClick={() => navigateTo('properties')} className="block w-full text-left px-3 py-2 text-base font-medium text-slate-700 hover:text-indigo-600 hover:bg-gray-50 rounded-md">{t('nav.properties')}</button>
-              <button onClick={() => navigateTo('contact')} className="block w-full text-left px-3 py-2 text-base font-medium text-slate-700 hover:text-indigo-600 hover:bg-gray-50 rounded-md">{t('nav.contact')}</button>
-              <button onClick={() => navigateTo(userName ? 'dashboard' : 'login')} className="block w-full text-left px-3 py-2 text-base font-medium text-slate-500 hover:text-indigo-600 hover:bg-gray-50 rounded-md border-t border-gray-100 mt-2 pt-3">{userName || t('nav.agent_login')}</button>
+              <button onClick={() => navigateTo('home')} className="block w-full text-left px-3 py-2 text-base font-medium text-slate-700 hover:text-red-600 hover:bg-gray-50 rounded-md">{t('nav.home')}</button>
+              <button onClick={() => navigateTo('properties')} className="block w-full text-left px-3 py-2 text-base font-medium text-slate-700 hover:text-red-600 hover:bg-gray-50 rounded-md">{t('nav.properties')}</button>
+              <button onClick={() => navigateTo('contact')} className="block w-full text-left px-3 py-2 text-base font-medium text-slate-700 hover:text-red-600 hover:bg-gray-50 rounded-md">{t('nav.contact')}</button>
+              <button onClick={() => navigateTo(userName ? 'dashboard' : 'login')} className="block w-full text-left px-3 py-2 text-base font-medium text-slate-500 hover:text-red-600 hover:bg-gray-50 rounded-md border-t border-gray-100 mt-2 pt-3">{userName || t('nav.agent_login')}</button>
             </div>
           </div>
         )}
@@ -637,14 +706,14 @@ function InnerApp() {
 
       <main className="flex-grow">
         {detailView ? (
-          <DetailView />
+          DetailView()
         ) : (
           <>
-            {currentView === 'home' && <HomeView />}
-            {currentView === 'properties' && <PropertiesView />}
-            {currentView === 'contact' && <ContactView />}
-            {currentView === 'login' && <LoginView />}
-            {currentView === 'dashboard' && <DashboardView />}
+            {currentView === 'home' && HomeView()}
+            {currentView === 'properties' && PropertiesView()}
+            {currentView === 'contact' && ContactView()}
+            {currentView === 'login' && LoginView()}
+            {currentView === 'dashboard' && DashboardView()}
           </>
         )}
       </main>
@@ -654,10 +723,10 @@ function InnerApp() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
             <div className="col-span-1 md:col-span-2">
               <div className="flex items-center mb-4">
-                <div className="bg-indigo-600 p-1.5 rounded-lg mr-2">
+                <div className="bg-red-600 p-1.5 rounded-lg mr-2">
                   <Home size={20} />
                 </div>
-                <span className="text-xl font-bold">INMOBILIARIA <span className="text-indigo-500">CONESA</span></span>
+                <span className="text-xl font-bold">SC <span className="text-red-500">INMOBILIARIA</span></span>
               </div>
               <p className="text-slate-400 max-w-md">
                 Transformando la manera en que las personas encuentran su hogar ideal mediante tecnología avanzada y un servicio personalizado.
@@ -667,9 +736,9 @@ function InnerApp() {
             <div>
               <h4 className="font-bold mb-4 text-lg">{t('footer.explore')}</h4>
               <ul className="space-y-2 text-slate-400">
-                <li><button onClick={() => navigateTo('home')} className="hover:text-indigo-400 transition">{t('nav.home')}</button></li>
-                <li><button onClick={() => navigateTo('properties')} className="hover:text-indigo-400 transition">{t('nav.properties')}</button></li>
-                <li><button onClick={() => navigateTo('contact')} className="hover:text-indigo-400 transition">{t('nav.contact')}</button></li>
+                <li><button onClick={() => navigateTo('home')} className="hover:text-red-400 transition">{t('nav.home')}</button></li>
+                <li><button onClick={() => navigateTo('properties')} className="hover:text-red-400 transition">{t('nav.properties')}</button></li>
+                <li><button onClick={() => navigateTo('contact')} className="hover:text-red-400 transition">{t('nav.contact')}</button></li>
               </ul>
             </div>
 

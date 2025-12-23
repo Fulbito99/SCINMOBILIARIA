@@ -1,6 +1,6 @@
 import { Property } from './types';
 
-export const APP_NAME = 'Inmobiliaria Conesa';
+export const APP_NAME = 'SC Inmobiliaria';
 
 export const CONTACT_INFO = {
   EMAIL: 'francoaguirre928@gmail.com',
@@ -98,4 +98,4 @@ export const PROPERTIES: Property[] = [
   }
 ];
 
-export const INITIAL_MESSAGE = "¡Hola! Soy tu asistente inmobiliario de Inmobiliaria Conesa. ¿Estás buscando comprar, alquilar o necesitas consejo sobre alguna propiedad?";
+export const INITIAL_MESSAGE = "¡Hola! Soy tu asistente inmobiliario de SC Inmobiliaria. ¿Estás buscando comprar, alquilar o necesitas consejo sobre alguna propiedad?";

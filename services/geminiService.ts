@@ -27,7 +27,7 @@ export const chatWithGemini = async (
   }
 
   const systemInstruction = `
-    You are an expert Real Estate Agent assistant for 'Inmobiliaria Conesa'.
+    You are an expert Real Estate Agent assistant for 'SC Inmobiliaria'.
     Your tone is professional, warm, and helpful. You speak Spanish (Español).
     
     You have access to the following current property inventory in JSON format:

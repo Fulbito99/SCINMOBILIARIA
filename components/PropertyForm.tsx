@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { supabase } from '../services/supabase';
+import { supabase, uploadImage } from '../services/supabase';
 import { X, Save, Image as ImageIcon, Loader } from 'lucide-react';
 import { Property } from '../types';
 
@@ -52,7 +52,6 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({ onClose, onSuccess, 
                 location: formData.location,
                 beds: Number(formData.beds),
                 baths: Number(formData.baths),
-                sqft: Number(formData.sqft),
                 sqft: Number(formData.sqft),
                 type: formData.type,
                 listing_type: formData.listing_type,
@@ -112,7 +111,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({ onClose, onSuccess, 
                                 required
                                 value={formData.title}
                                 onChange={handleChange}
-                                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-red-500 outline-none"
                                 placeholder="Ej: Villa Moderna en la Costa"
                             />
                         </div>
@@ -123,7 +122,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({ onClose, onSuccess, 
                                 name="listing_type"
                                 value={formData.listing_type}
                                 onChange={handleChange}
-                                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-red-500 outline-none bg-white"
                             >
                                 <option value="sale">Venta</option>
                                 <option value="rent">Alquiler</option>
@@ -136,7 +135,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({ onClose, onSuccess, 
                                 name="type"
                                 value={formData.type}
                                 onChange={handleChange}
-                                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-red-500 outline-none bg-white"
                             >
                                 <option value="House">Casa</option>
                                 <option value="Apartment">Apartamento</option>
@@ -153,7 +152,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({ onClose, onSuccess, 
                                 required
                                 value={formData.location}
                                 onChange={handleChange}
-                                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-red-500 outline-none"
                                 placeholder="Madrid, España"
                             />
                         </div>
@@ -167,14 +166,14 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({ onClose, onSuccess, 
                                     required
                                     value={formData.price}
                                     onChange={handleChange}
-                                    className="flex-1 px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                    className="flex-1 px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-red-500 outline-none"
                                     placeholder="450000"
                                 />
                                 <select
                                     name="currency"
                                     value={formData.currency}
                                     onChange={handleChange}
-                                    className="w-32 px-2 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none bg-white"
+                                    className="w-32 px-2 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-red-500 outline-none bg-white"
                                 >
                                     <option value="EUR">€ (EUR)</option>
                                     <option value="USD">$ (USD)</option>
@@ -191,7 +190,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({ onClose, onSuccess, 
                                     type="number"
                                     value={formData.beds}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-red-500 outline-none"
                                 />
                             </div>
                             <div>
@@ -202,7 +201,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({ onClose, onSuccess, 
                                     step="0.5"
                                     value={formData.baths}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-red-500 outline-none"
                                 />
                             </div>
                             <div>
@@ -212,7 +211,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({ onClose, onSuccess, 
                                     type="number"
                                     value={formData.sqft}
                                     onChange={handleChange}
-                                    className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                    className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-red-500 outline-none"
                                 />
                             </div>
                         </div>
@@ -224,7 +223,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({ onClose, onSuccess, 
                                 rows={4}
                                 value={formData.description}
                                 onChange={handleChange}
-                                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-red-500 outline-none"
                                 placeholder="Descripción detallada de la propiedad..."
                             />
                         </div>
@@ -235,33 +234,82 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({ onClose, onSuccess, 
                                 name="features"
                                 value={formData.features}
                                 onChange={handleChange}
-                                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none"
+                                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-red-500 outline-none"
                                 placeholder="Piscina, Jardín, Garaje..."
                             />
                         </div>
 
                         <div className="col-span-2">
-                            <label className="block text-sm font-medium text-slate-700 mb-2">URLs de Imágenes (una por línea)</label>
-                            <textarea
-                                name="image_url"
-                                value={formData.image_url}
-                                onChange={handleChange}
-                                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:ring-2 focus:ring-indigo-500 outline-none"
-                                rows={4}
-                                placeholder={`https://ejemplo.com/foto1.jpg\nhttps://ejemplo.com/foto2.jpg`}
-                            />
-                            <p className="text-xs text-gray-400 mt-1">* La primera imagen será la portada.</p>
+                            <label className="block text-sm font-medium text-slate-700 mb-2">Imágenes de la Propiedad (Máx 10)</label>
 
-                            {/* Preview of first image */}
-                            {formData.image_url && (
-                                <div className="mt-2 flex gap-2 overflow-x-auto pb-2">
-                                    {formData.image_url.split('\n').filter(url => url.trim()).map((url, idx) => (
-                                        <div key={idx} className="w-20 h-20 bg-gray-100 rounded-lg overflow-hidden flex-shrink-0 border border-gray-200">
-                                            <img src={url} alt={`Preview ${idx}`} className="w-full h-full object-cover" />
-                                        </div>
-                                    ))}
+                            <div className="flex flex-col gap-4">
+                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:bg-gray-50 transition cursor-pointer relative">
+                                    <input
+                                        type="file"
+                                        multiple
+                                        accept="image/*"
+                                        onChange={async (e) => {
+                                            if (e.target.files && e.target.files.length > 0) {
+                                                const files: File[] = Array.from(e.target.files);
+                                                if (formData.image_url.split('\n').filter(Boolean).length + files.length > 10) {
+                                                    alert("Máximo 10 imágenes permitidas");
+                                                    return;
+                                                }
+
+                                                setLoading(true); // Reuse loading state for UI feedback
+                                                const newUrls: string[] = [];
+                                                for (const file of files) {
+                                                    const url = await uploadImage(file);
+                                                    if (url) newUrls.push(url);
+                                                }
+
+                                                const currentUrls = formData.image_url.split('\n').filter(Boolean);
+                                                setFormData(prev => ({
+                                                    ...prev,
+                                                    image_url: [...currentUrls, ...newUrls].join('\n')
+                                                }));
+                                                setLoading(false);
+                                            }
+                                        }}
+                                        className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                    />
+                                    <div className="flex flex-col items-center gap-2 text-slate-500">
+                                        <ImageIcon size={32} className="text-slate-400" />
+                                        <p className="font-medium">Arrastra fotos aquí o haz clic para subir</p>
+                                        <p className="text-xs">Soporta JPG, PNG</p>
+                                    </div>
                                 </div>
-                            )}
+
+                                {/* Preview Grid */}
+                                {formData.image_url && (
+                                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                                        {formData.image_url.split('\n').filter(url => url.trim()).map((url, idx) => (
+                                            <div key={idx} className="relative group aspect-square bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
+                                                <img src={url} alt={`Preview ${idx}`} className="w-full h-full object-cover" />
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        const urls = formData.image_url.split('\n').filter(Boolean);
+                                                        const newUrls = urls.filter((_, i) => i !== idx);
+                                                        setFormData(prev => ({
+                                                            ...prev,
+                                                            image_url: newUrls.join('\n')
+                                                        }));
+                                                    }}
+                                                    className="absolute top-1 right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                                >
+                                                    <X size={12} />
+                                                </button>
+                                                {idx === 0 && (
+                                                    <div className="absolute bottom-0 left-0 right-0 bg-black/50 text-white text-[10px] text-center py-1">
+                                                        Portada
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
 
@@ -276,7 +324,7 @@ export const PropertyForm: React.FC<PropertyFormProps> = ({ onClose, onSuccess, 
                         <button
                             type="submit"
                             disabled={loading}
-                            className="px-6 py-3 rounded-xl font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition shadow-lg flex items-center gap-2"
+                            className="px-6 py-3 rounded-xl font-bold bg-red-600 text-white hover:bg-red-700 transition shadow-lg flex items-center gap-2"
                         >
                             {loading ? <Loader className="animate-spin" size={20} /> : <Save size={20} />}
                             Guardar Propiedad

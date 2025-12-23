@@ -2,10 +2,12 @@
 export default {
     content: [
         "./index.html",
-        "./src/**/*.{js,ts,jsx,tsx}",
-        "./**/*.{js,ts,jsx,tsx}",
+        "./*.{js,ts,jsx,tsx}",
+        "./components/**/*.{js,ts,jsx,tsx}",
+        "./context/**/*.{js,ts,jsx,tsx}",
+        "./utils/**/*.{js,ts,jsx,tsx}"
     ],
-    darkMode: 'class', // Enable class-based dark mode
+    darkMode: 'class', // IMPORTANTE: Esto habilita el cambio manual de modo oscuro
     theme: {
         extend: {},
     },

@@ -55,7 +55,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onCancel }) => {
         <div className="min-h-[70vh] flex items-center justify-center px-4 animate-fade-in">
             <div className="bg-white p-8 rounded-2xl shadow-xl border border-gray-100 w-full max-w-md">
                 <div className="text-center mb-8">
-                    <div className="bg-indigo-600 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-indigo-200">
+                    <div className="bg-red-600 w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-red-200">
                         <Lock className="text-white" size={32} />
                     </div>
                     <h2 className="text-2xl font-bold text-slate-900">Acceso Agentes</h2>
@@ -77,8 +77,8 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onCancel }) => {
                                 type="email"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
-                                className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition bg-gray-50 focus:bg-white"
-                                placeholder="agente@conesa.com"
+                                className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition bg-gray-50 focus:bg-white"
+                                placeholder="agente@sc-inmobiliaria.com"
                                 required
                             />
                         </div>
@@ -92,7 +92,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onCancel }) => {
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition bg-gray-50 focus:bg-white"
+                                className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none transition bg-gray-50 focus:bg-white"
                                 placeholder="••••••••"
                                 required
                             />

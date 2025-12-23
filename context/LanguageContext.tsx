@@ -28,7 +28,7 @@ const translations: Translations = {
         'featured.view_all': 'Ver todas las propiedades',
 
         // Why Choose Us
-        'why.title': '¿Por qué elegir Inmobiliaria Conesa?',
+        'why.title': '¿Por qué elegir SC Inmobiliaria?',
         'why.point1': 'Experiencia de más de 20 años en el mercado.',
         'why.point2': 'Asesoramiento personalizado de principio a fin.',
         'why.point3': 'Tecnología de vanguardia para encontrar su hogar.',
@@ -68,7 +68,7 @@ const translations: Translations = {
 
         // Footer
         'footer.explore': 'Explorar',
-        'footer.rights': '© 2024 Inmobiliaria Conesa. Todos los derechos reservados.',
+        'footer.rights': '© 2024 SC Inmobiliaria. Todos los derechos reservados.',
 
         // Dashboard
         'dashboard.title': 'Panel de Agentes',
@@ -105,7 +105,7 @@ const translations: Translations = {
         'featured.view_all': 'View all properties',
 
         // Why Choose Us
-        'why.title': 'Why Choose Inmobiliaria Conesa?',
+        'why.title': 'Why Choose SC Inmobiliaria?',
         'why.point1': 'Over 20 years of market experience.',
         'why.point2': 'Personalized advice from start to finish.',
         'why.point3': 'Cutting-edge technology to find your home.',
@@ -145,7 +145,7 @@ const translations: Translations = {
 
         // Footer
         'footer.explore': 'Explore',
-        'footer.rights': '© 2024 Inmobiliaria Conesa. All rights reserved.',
+        'footer.rights': '© 2024 SC Inmobiliaria. All rights reserved.',
 
         // Dashboard
         'dashboard.title': 'Agent Dashboard',
